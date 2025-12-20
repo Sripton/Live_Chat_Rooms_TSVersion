@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Container,
@@ -10,12 +10,12 @@ import {
   Button,
   Link,
 } from "@mui/material";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import KeyIcon from "@mui/icons-material/Key";
 import PersonIcon from "@mui/icons-material/Person";
 
-import { useAppDispatch, useAppSelector } from "../../redux/store/hooks";
+import { useAppDispatch } from "../../redux/store/hooks";
 import { registersUser } from "../../redux/actions/userActions";
 const COLORS = {
   cardBg: "#231433",
@@ -32,37 +32,32 @@ type RegisterInputs = {
 
 export default function Signup() {
   // --------------------------------------------------------------------------------------
-  // Состояние формы и загрузки
-  const [inputs, setInputs] = useState<RegisterInputs>({
+  // начальное состояние
+  const initialInputs: RegisterInputs = {
     login: "",
     password: "",
     username: "",
     avatar: null,
-  });
+  };
+  // Состояние формы и загрузки
+  const [inputs, setInputs] = useState<RegisterInputs>(initialInputs);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { userName } = useAppSelector((store) => store.user);
 
-  const inputsUsersHandler = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target;
-      setInputs((prev) => ({ ...prev, [name]: value }));
-    },
-    []
-  );
+  const inputsUsersHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setInputs((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const signupSubmitHandler = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const response = await dispatch(registersUser(inputs));
-      if (response) {
-        navigate("/");
-      }
-    },
-    [dispatch, inputs, navigate]
-  );
-  console.log("userName", userName);
+  const signupSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const response = await dispatch(registersUser(inputs));
+    if (response) {
+      setInputs(initialInputs); // сброс формы
+      navigate("/");
+    }
+  };
+
   return (
     <Box
       sx={{

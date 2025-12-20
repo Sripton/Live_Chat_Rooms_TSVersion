@@ -9,7 +9,7 @@ import {
 import type { UserActions } from "../types/types";
 
 export type UserState = {
-  userId: string | null;
+  userId: number | null;
   userName: string | null;
   userAvatar: string | null;
   isAuthenticated: boolean;
@@ -44,6 +44,9 @@ export default function userReduсer(
         isAuthenticated: true,
         error: null,
       };
+
+    case LOGOUT_USER:
+      return initialState;
 
     default:
       return state;

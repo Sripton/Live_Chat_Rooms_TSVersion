@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Container,
@@ -8,9 +8,11 @@ import {
   Button,
   Link,
 } from "@mui/material";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import KeyIcon from "@mui/icons-material/Key";
+import { useAppDispatch } from "../../redux/store/hooks";
+import { loginUser } from "../../redux/actions/userActions";
 const COLORS = {
   cardBg: "#231433",
   accentColor: "#b794f4",
@@ -20,10 +22,35 @@ const COLORS = {
 type AuthInputs = {
   login: string;
   password: string;
-  username: string;
-  avatar?: string | null;
 };
 export default function Signin() {
+  // начальное состояние
+  const initialInputs: AuthInputs = {
+    login: "",
+    password: "",
+  };
+  const [inputs, setInputs] = useState<AuthInputs>(initialInputs);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const inputsUsersHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setInputs((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const signinSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form =
+      ((location.state as { from?: { pathname?: string } }) || null)?.from
+        ?.pathname || "/";
+
+    const response = await dispatch(loginUser(inputs));
+    if (response) {
+      navigate(form);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -71,6 +98,7 @@ export default function Signin() {
           {/* Форма */}
           <Box
             component="form"
+            onSubmit={signinSubmitHandler}
             sx={{
               width: "100%",
               display: "flex",
@@ -82,6 +110,8 @@ export default function Signin() {
             {/* Логин */}
             <TextField
               name="login"
+              value={inputs.login || ""}
+              onChange={inputsUsersHandler}
               variant="outlined"
               placeholder="Введите логин"
               InputProps={{
@@ -123,6 +153,8 @@ export default function Signin() {
             {/* Пароль */}
             <TextField
               name="password"
+              value={inputs.password || ""}
+              onChange={inputsUsersHandler}
               type="password"
               variant="outlined"
               placeholder="Введите пароль"

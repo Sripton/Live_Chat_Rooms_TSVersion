@@ -16,6 +16,9 @@ import AccountBoxIcon from "@mui/icons-material/AccountBox";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import AppRegistrationRoundedIcon from "@mui/icons-material/AppRegistrationRounded";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAppSelector } from "../../redux/store/hooks";
+import { logoutUser } from "../../redux/actions/userActions";
+import { useAppDispatch } from "../../redux/store/hooks";
 
 const COLORS = {
   main: "#1d102f",
@@ -29,16 +32,21 @@ export default function Navbar() {
   const [openMenu, setOpenMenu] = useState<boolean>(false); // явная типизация
   const navigate = useNavigate(); // Навигация
   const location = useLocation(); // Предоставляет объект с информацией о текущем URL.
+  const dispatch = useAppDispatch();
   const menuItems: string[] = ["Главная", "Мой профиль", "Войти", "Выход"];
 
+  const { userName } = useAppSelector((store) => store.user);
+
   // Обработка кликов по пунктам меню
-  const handleMenuClick = (text: string) => {
+  const handleMenuClick = async (text: string) => {
     if (text === "Главная") {
       navigate("/");
     } else if (text === "Войти") {
       navigate("/signin");
     } else if (text === "Мой профиль") {
       navigate("/profile");
+    } else if (text === "Выход") {
+      await dispatch(logoutUser());
     } else {
       navigate("/");
     }
@@ -68,6 +76,8 @@ export default function Navbar() {
         return;
     }
   };
+
+  console.log("userName", userName);
 
   return (
     <>
@@ -123,7 +133,7 @@ export default function Navbar() {
                 textAlign: "right",
               }}
             >
-              userName
+              {userName}
             </Typography>
             <Avatar />
           </Box>

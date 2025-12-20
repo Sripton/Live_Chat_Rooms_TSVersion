@@ -41,7 +41,7 @@ async function main() {
     cookie: {
       maxAge: 1000 * 60 * 60 * 12, // Время жизни куки (12 часов)
       httpOnly: true, // Делаем куку недоступной для JavaScript (только сервер)
-      sameSite: "lax", // Политика sameSite (предотвращает CSRF-атаки)
+      sameSite: "lax", // Политика sameSite (предотвращает CSRF-атаки). Должно быть none в продакшене
       secure: false, // Должно быть true в продакшене (только HTTPS)
     },
   };
