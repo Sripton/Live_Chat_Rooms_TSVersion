@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  
+ 
 }
 
 model User {
@@ -16,7 +16,46 @@ model User {
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   accounts            Account[]                                  // “привязки к провайдерам”. виртуальное поле на уровне ORM
+
+ //  User может быть владельцем МНОГИХ комнат
+  ownedRooms         Room[]      @relation("RoomOwner")          
+
+ // User может быть участником МНОГИХ комнат
+  roomAdmissions RoomAdmission[]                                   // Мои членства в комнатах
+  joinedRooms Room[]              @relation("UserJoinedRooms")    // Комнаты где я УЧАСТНИК
 }
+
+
+model Room {
+  id                  String     @id @default(cuid())
+  nameRoom            String
+  isPrivate           Boolean   @default(false)
+
+  // Room имеет только ОДНОГО владельца
+  ownerId             String
+  owner   User        @relation("RoomOwner", fields: [ownerId], references: [id])
+
+  admissions RoomAdmission[]                                     // Все членства в этой комнате
+  members    User[]   @relation("UserJoinedRooms")               // Все участники комнаты
+}
+
+model RoomAdmission {
+  id                  String     @id @default(cuid())
+  userId              String
+  roomId              String
+
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room                Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  // чтобы один и тот же user не был дважды добавлен в одну и ту же комнату
+  @@unique([userId, roomId])
+
+  @@index([userId])
+  @@index([roomId])
+
+}
+
+
 
 model Account {
   id                  String     @id @default(cuid())
@@ -27,3 +66,6 @@ model Account {
   @@unique([provider, providerAccountId])                       // @@unique защищает от дубликатов У одного провайдера один accountId может существовать только один раз
   @@index([userId])                                             // @@index ускоряет работу, @@ => для всей модели
 }
+
+
+

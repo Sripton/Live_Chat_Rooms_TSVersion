@@ -5,10 +5,10 @@ import cors from "cors";
 import session from "express-session"; // Подключаем express-session для управления сессиями
 import { RedisStore } from "connect-redis";
 import { createClient } from "redis";
-import userAPIRouter from "./API/userAPIRouter";
+import userAPIRouter from "./API/users/userAPIRouter";
 import passport from "passport";
 import "./auth/passportGoogle";
-import authAPIRouter from "./API/authAPIRouter";
+import authAPIRouter from "./API/users/authAPIRouter";
 const app = express();
 const PORT = process.env.PORT;
 
