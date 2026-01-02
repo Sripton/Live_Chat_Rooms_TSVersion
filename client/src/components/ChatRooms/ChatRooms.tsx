@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Paper,
@@ -6,7 +6,6 @@ import {
   Button,
   Typography,
   IconButton,
-  Divider,
   InputBase,
   Stack,
   useMediaQuery,
@@ -14,7 +13,6 @@ import {
   Collapse,
   Grow,
   Zoom,
-  Fade,
   Slide,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -88,10 +86,42 @@ export default function ChatRooms() {
   const isMid = useMediaQuery("(min-width:1000px) and (max-width:1100px)");
   const isLargeDesktop = useMediaQuery(theme.breakpoints.up("lg")); // ≥ 1200px
 
-  // Состояния для управления видимостью списков
-  const [showOpenRooms, setShowOpenRooms] = useState(!isMobile); // desctop -> false (!false) -> true
-  const [showPrivateRooms, setShowPrivateRooms] = useState(!isMobile); // desctop -> false (!false) -> true
+  // Состояния для мобильного сворачивания (инициализируем как свернутое на мобильных)
+  const [mobileOpenRoomsExpanded, setMobileOpenRoomsExpanded] = useState(false);
+  const [mobilePrivateRoomsExpanded, setMobilePrivateRoomsExpanded] =
+    useState(false);
 
+  // При изменении isMobile сбрасываем состояния
+  useEffect(() => {
+    // При переходе на мобильный - сворачиваем
+    setMobileOpenRoomsExpanded(false);
+    setMobilePrivateRoomsExpanded(false);
+  }, [isMobile]);
+
+  //  Вычисляем видимость
+  const showOpenRooms = useMemo(() => {
+    return isMobile ? mobileOpenRoomsExpanded : true;
+  }, [isMobile, mobileOpenRoomsExpanded]);
+
+  const showPrivateRooms = useMemo(() => {
+    return isMobile ? mobilePrivateRoomsExpanded : true;
+  }, [isMobile, mobilePrivateRoomsExpanded]);
+
+  // Обработчики кликов
+  const handleOpenRoomsClick = () => {
+    if (isMobile) {
+      setMobileOpenRoomsExpanded((prev) => !prev); // true
+    }
+  };
+
+  const handlePrivateRoomsClick = () => {
+    if (isMobile) {
+      setMobilePrivateRoomsExpanded((prev) => !prev);
+    }
+  };
+
+  console.log("isMobile", isMobile);
+  console.log("showOpenRooms", showOpenRooms);
   // Анимация появления элементов
   const styleAnimation = (index: number) => ({
     animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`,
@@ -108,7 +138,6 @@ export default function ChatRooms() {
   });
 
   // --------------------- Поиск комнат --------------------
-
   const [searchRooms, setSearchRooms] = useState("");
   const query = searchRooms.trim().toLowerCase();
   const filteredSearchRooms = !query
@@ -200,7 +229,7 @@ export default function ChatRooms() {
             >
               {/* Заголовок с возможностью сворачивания на мобильных */}
               <Box
-                onClick={() => isMobile && setShowOpenRooms(!showOpenRooms)}
+                onClick={handleOpenRoomsClick}
                 sx={{
                   p: isMobile ? 2 : 2.5,
                   cursor: isMobile ? "pointer" : "default",
@@ -415,9 +444,7 @@ export default function ChatRooms() {
             >
               {/* Заголовок с возможностью сворачивания на мобильных */}
               <Box
-                onClick={() =>
-                  isMobile && setShowPrivateRooms(!showPrivateRooms)
-                }
+                onClick={handlePrivateRoomsClick}
                 sx={{
                   p: isMobile ? 2 : 2.5,
                   cursor: isMobile ? "pointer" : "default",
