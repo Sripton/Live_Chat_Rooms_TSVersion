@@ -59,6 +59,18 @@ const COLORS = {
   textMuted: "#9ca3af",
 };
 
+// Стили для TabPanel
+const commonPanelBoxSx = {
+  p: 2,
+  backgroundColor: COLORS.cardBg,
+  borderRadius: 3,
+  border: "1px solid rgba(255,255,255,0.06)",
+  maxHeight: "65vh",
+  // overflowY: needsExpand ? "auto" : "hidden",
+  pr: 1,
+  boxShadow: "0 14px 30px rgba(0,0,0,0.85)",
+};
+
 // xs: 0      - Extra small (мобильные телефоны)
 // sm: 600    - Small (планшеты, крупные телефоны)
 // md: 900    - Medium (небольшие ноутбуки, планшеты в альбомной)
@@ -68,6 +80,7 @@ const COLORS = {
 // Redux
 import { useAppSelector, useAppDispatch } from "../../redux/store/hooks";
 import { fetchUserRooms } from "../../redux/actions/roomActions";
+import { NavLink } from "react-router-dom";
 
 export default function UserDashBoard() {
   // ------------------  Табы --------------------
@@ -98,6 +111,8 @@ export default function UserDashBoard() {
   const theme = useTheme();
   //  ЭКРАНЫ МЕНЬШЕ lg (1200px)
   const isSmall = useMediaQuery(theme.breakpoints.down("lg"));
+
+  console.log("userRooms", userRooms);
 
   return (
     <div
@@ -268,23 +283,70 @@ export default function UserDashBoard() {
 
         {/* Panel: Мои комнаты */}
         <TabPanel value={tabIndex} index={0}>
-          <Box>
-            <Grid container>
+          <Box sx={commonPanelBoxSx}>
+            <Grid container spacing={2} mb={2}>
               {userRooms.length < 0 ? (
                 <Typography sx={{ mt: 1, color: COLORS.textMuted }}>
                   У вас пока нет комнат.
                 </Typography>
               ) : (
                 userRooms.map((room) => (
-                  <Grid item>
-                    <Box>
-                      <Typography>{room.nameRoom}</Typography>
+                  <Grid key={room.id} item xs={12}>
+                    <Box
+                      component={NavLink}
+                      to={`/chatcards/${room.id}`}
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      mb={1}
+                      sx={{
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        backgroundColor: COLORS.cardSoftBg,
+                        p: 2,
+                        borderRadius: 3,
+                        boxShadow: "0 8px 20px rgba(0,0,0,0.7)",
+                        border: "1px solid rgba(148,163,184,0.35)",
+                        transition:
+                          "transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: "0 14px 30px rgba(0,0,0,0.95)",
+                          borderColor: "rgba(183,148,244,0.7)",
+                          backgroundColor: "#311b43",
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          textDecoration: "none",
+                          color: COLORS.accentColor,
+                          "&:hover": {
+                            color: COLORS.accentColorStrong,
+                          },
+                        }}
+                      >
+                        {room.isPrivate ? "🔒" : "🌐"} {room.nameRoom}
+                      </Typography>
                     </Box>
                   </Grid>
                 ))
               )}
             </Grid>
           </Box>
+        </TabPanel>
+
+        {/* Panel: Запросы */}
+        <TabPanel value={tabIndex} index={1}>
+          <Box>Запросы на приватные комнаты</Box>
+        </TabPanel>
+
+        {/* Panel: Ответы на комментарии */}
+        <TabPanel value={tabIndex} index={2}>
+          <Box>Ответы на ваши комментарии и посты</Box>
         </TabPanel>
       </Box>
     </div>
