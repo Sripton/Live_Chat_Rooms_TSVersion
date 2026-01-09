@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AppBar,
   Box,
@@ -32,6 +32,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 
 import { useAppSelector } from "../../redux/store/hooks";
+import { lightGreen } from "@mui/material/colors";
 
 const COLORS = {
   mainColor: "#1d102f",
@@ -50,6 +51,10 @@ interface ModalRoomListProps {
   onCloseRoomList: () => void;
   isSmall: boolean;
 }
+
+// тип для сортировки комнат
+type SortMode = "az" | "za";
+
 export default function ModalRoomList({
   openAll,
   view,
@@ -62,6 +67,7 @@ export default function ModalRoomList({
   // применяем стили, когда ширина экрана меньше или равна sm брейкпоинту
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   // ------------------ Статусы комнат ---------------
   // локальные состояния для переключения комнат по статусу открытые/приватные
   const [tab, setTab] = useState<number>(view === "private" ? 1 : 0);
@@ -75,24 +81,52 @@ export default function ModalRoomList({
   }, [openAll, view]); // зависимости
 
   // ----------------- Данные из store ------------------
-  const { allRooms } = useAppSelector((store) => store.room);
-  const openRooms = allRooms.filter((room) => room.isPrivate === false);
-  const privateRooms = allRooms.filter((room) => room.isPrivate === true);
-  const currentList = tab === 0 ? openRooms : privateRooms;
+  const { allRooms } = useAppSelector((store) => store.room); // забираем все конматы из store
+  const openRooms = allRooms.filter((room) => room.isPrivate === false); // только открытые комнаты
+  const privateRooms = allRooms.filter((room) => room.isPrivate === true); // только приваные комнаты
+  const currentList = tab === 0 ? openRooms : privateRooms; // определдяем текущие комнаты для отображения
 
   // Длина списка комнат
   const currentCount = currentList.length;
 
+  // ----------------- Search + sort ------------------
+  const [search, setSearch] = useState(""); // состояние для поиска комнат
+  const [sortMode, setSortMode] = useState<SortMode>("az"); // сортировка по умолчанию
+
+  // эффект для сбрасывания состояний поиска/сортировки
+  useEffect(() => {
+    if (openAll) {
+      setSearch("");
+      setSortMode("az");
+    }
+  }, [openAll]);
+  // Сортируем искомые комнаты
+  const filteredList = useMemo(() => {
+    const q = search.trim().toLowerCase(); // данные в строке поиска
+    const byName = (r: any) => (r.nameRoom || "").toString(); // ф-я возвращает только навания комнат
+    const list = !q // если строка пуста
+      ? currentList // возвращаем комнаты
+      : currentList.filter((room) => byName(room).toLowerCase().includes(q)); // проверка на содержание искомых комнат
+    const sorted = [...list].sort((a, b) => byName(a).localeCompare(b)); // сортировка комнат
+    return sortMode === "az" ? sorted : sorted.reverse(); // сортировка по возрастанию/убыванию
+  }, [search, currentList, sortMode]); // добавляем зависмости
+
   // ----------------- для мобильных устройств ------------------
+  // состояние для контроля отображения при мобильных устройствах
   const [controlsOpen, setControlsOpen] = useState<boolean>(!isMobile);
 
+  // эффект для контроля в зависимости от устройства
   useEffect(() => {
     if (isMobile) {
       setControlsOpen(false);
     } else {
       setControlsOpen(true);
     }
-  }, [isMobile, openAll]);
+  }, [isMobile, openAll]); // зависимости
+
+  // функция для сортировки комнат
+  const handleToggleSort = () =>
+    setSortMode((prev) => (prev === "az" ? "za" : "az"));
 
   return (
     <Dialog
@@ -145,20 +179,6 @@ export default function ModalRoomList({
           >
             <CloseIcon />
           </IconButton>
-
-          {/* <Typography
-            sx={{
-              ml: 2,
-              flex: 1,
-              fontSize: "1rem",
-              fontWeight: 500,
-              fontFamily:
-                "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            }}
-            component="div"
-          >
-            {tab ? "Открытые комнаты" : "Приватные комнаты"}
-          </Typography> */}
           <Box sx={{ flex: 1, minWidth: 0, pl: 0.5 }}>
             <Typography
               sx={{
@@ -196,6 +216,7 @@ export default function ModalRoomList({
           {/* Сортировка комнат */}
           <Stack direction="row" spacing={1} alignItems="center">
             <IconButton
+              onClick={handleToggleSort}
               sx={{
                 color: COLORS.accentColor,
                 background: COLORS.accentSoft,
@@ -227,89 +248,6 @@ export default function ModalRoomList({
         </Toolbar>
 
         {/* Контролы: поиск + табы */}
-        {/* <Box sx={{ px: 2, pb: 1.5 }}>
-          <Paper
-            component="form"
-            sx={{
-              mt: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              px: 1,
-              py: 0.5,
-              borderRadius: 999,
-              bgcolor: COLORS.mainColor,
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
-            <InputBase
-              placeholder="Поиск комнаты"
-              sx={{
-                flex: 1,
-                fontSize: { xs: "0.9rem", md: "0.95rem" },
-                color: "#e5e7eb",
-                fontFamily:
-                  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              }}
-            />
-            <Button
-              sx={{
-                textTransform: "none",
-                fontSize: "0.8rem",
-                px: 2,
-                borderRadius: 999,
-                bgcolor: COLORS.accentSoft,
-                color: COLORS.accentColor,
-                "&:hover": {
-                  bgcolor: "rgba(183,148,244,0.25)",
-                },
-              }}
-            >
-              Искать
-            </Button>
-          </Paper>
-
-          <Tabs
-            value={tab}
-            variant="fullWidth"
-            sx={{
-              mt: 1,
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontSize: "0.85rem",
-                fontFamily:
-                  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                minHeight: 40,
-                color: COLORS.textMuted,
-              },
-              "& .Mui-selected": {
-                color: COLORS.accentColor,
-              },
-              "& .MuiTabs-indicator": {
-                backgroundColor: COLORS.accentColor,
-              },
-            }}
-          >
-            <Tab
-              label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <PublicIcon fontSize="small" />
-                  Открытые
-                </Box>
-              }
-            ></Tab>
-            <Tab
-              label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <LockIcon fontSize="small" />
-                  Приватные
-                </Box>
-              }
-            ></Tab>
-          </Tabs>
-        </Box> */}
-        {/* Controls: search + tabs */}
         <Collapse in={controlsOpen} timeout={250}>
           <Box sx={{ px: 2, pb: 1.75 }}>
             <Paper
@@ -345,6 +283,8 @@ export default function ModalRoomList({
                 <SearchIcon />
               </IconButton>
               <InputBase
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Поиск по названию…"
                 sx={{
                   flex: 1,
@@ -356,6 +296,8 @@ export default function ModalRoomList({
                 }}
               />
               <Button
+                onClick={() => setSearch("")}
+                disabled={!search.trim()}
                 sx={{
                   textTransform: "none",
                   fontSize: "0.8rem",
@@ -376,6 +318,8 @@ export default function ModalRoomList({
 
             <Tabs
               value={tab}
+              // переключение состояния для статуса комнат
+              onChange={(_, v) => setTab(v)}
               variant="fullWidth"
               sx={{
                 mt: 1.25,
@@ -434,7 +378,7 @@ export default function ModalRoomList({
         }}
       >
         <List dense disablePadding>
-          {currentList.map((room, index) => (
+          {filteredList.map((room, index) => (
             <Grow in={true} timeout={index * 70} key={room.id}>
               <ListItem disablePadding sx={{ mb: 1 }}>
                 <ListItemButton
