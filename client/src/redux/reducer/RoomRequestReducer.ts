@@ -2,9 +2,12 @@ import {
   ROOM_REQUEST_SUCCESS,
   ROOM_REQUEST_ERROR,
   CLEAR_ROOM_REQUEST_STATE,
-} from "../types/requestTypes";
+} from "../types/roomRequestTypes";
 
-import type { RequestActions, RoomRequestState } from "../types/requestTypes";
+import type {
+  RequestActions,
+  RoomRequestState,
+} from "../types/roomRequestTypes";
 
 const initialState: RoomRequestState = {
   status: null,

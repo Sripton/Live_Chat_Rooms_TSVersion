@@ -173,6 +173,8 @@ export default function ChatRooms() {
   // состояние для переключения  статуса открытых/приватных комнат
   const [roomsView, setRoomsView] = useState<string>("");
 
+  console.log("privateRooms", privateRooms);
+  console.log("userId", typeof userId);
   return (
     <Box
       sx={{
@@ -567,6 +569,16 @@ export default function ChatRooms() {
                             component={NavLink}
                             sx={{ textDecoration: "none" }}
                             onClick={() => {
+                              // если пользователь не зарегистрирован
+                              if (!userId) {
+                                // отправялем пользователя регистрироваться/войти
+                                navigate("/signin");
+                              }
+                              // автоматический доступ для владельцев комнат
+                              if (String(room.ownerId) === String(userId)) {
+                                // переход в комнату
+                                navigate(`/chatcards/${room.id}`);
+                              }
                               setOpenRequestModal((prev) => !prev);
                               setRoomId(room.id);
                             }}
@@ -590,8 +602,10 @@ export default function ChatRooms() {
                                   top: 0,
                                   bottom: 0,
                                   width: "3px",
-                                  background:
-                                    "linear-gradient(180deg, #b794f4, transparent)",
+                                  background: room.isPrivate
+                                    ? "linear-gradient(180deg, #ef4444, transparent)"
+                                    : "linear-gradient(180deg, #b794f4, transparent)",
+
                                   opacity: 0,
                                   transition: "opacity 0.3s ease",
                                 },

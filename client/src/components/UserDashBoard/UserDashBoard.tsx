@@ -66,7 +66,7 @@ const commonPanelBoxSx = {
   borderRadius: 3,
   border: "1px solid rgba(255,255,255,0.06)",
   maxHeight: "65vh",
-  // overflowY: needsExpand ? "auto" : "hidden",
+  overflowY: "hidden",
   pr: 1,
   boxShadow: "0 14px 30px rgba(0,0,0,0.85)",
 };
@@ -106,6 +106,7 @@ export default function UserDashBoard() {
     }
   }, [userId]);
 
+  // Забираем комнаты пользователя из store
   const { userRooms } = useAppSelector((store) => store.room);
 
   const theme = useTheme();
@@ -339,12 +340,25 @@ export default function UserDashBoard() {
 
         {/* Panel: Запросы */}
         <TabPanel value={tabIndex} index={1}>
-          <Box>Запросы на приватные комнаты</Box>
+          <Box
+            sx={{
+              ...commonPanelBoxSx,
+              maxHeight: "60vh",
+            }}
+          >
+            Запросы на приватные комнаты
+          </Box>
         </TabPanel>
 
         {/* Panel: Ответы на комментарии */}
         <TabPanel value={tabIndex} index={2}>
-          <Box>Ответы на ваши комментарии и посты</Box>
+          <Box
+            sx={{
+              ...commonPanelBoxSx,
+            }}
+          >
+            Ответы на ваши комментарии и посты
+          </Box>
         </TabPanel>
       </Box>
     </div>

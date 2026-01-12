@@ -1,7 +1,7 @@
 import {
   ROOM_REQUEST_SUCCESS,
   ROOM_REQUEST_ERROR,
-} from "../types/requestTypes";
+} from "../types/roomRequestTypes";
 import axios, { AxiosError } from "axios";
 import type { AppDispatch } from "../store/store";
 
@@ -29,7 +29,7 @@ export const sendRoomRequest =
       dispatch({
         // Диспатчим ERROR-экшен.
         type: ROOM_REQUEST_ERROR,
-        // В payload кладём объект { message }. текст ошибки для UI 
+        // В payload кладём объект { message }. текст ошибки для UI
         payload: { message: err?.response?.data.message ?? "Ошибка запроса" },
       });
     }

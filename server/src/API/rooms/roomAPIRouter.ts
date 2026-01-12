@@ -1,5 +1,6 @@
 import express from "express";
 import { prisma } from "../../lib/prisma";
+import { RoomRequestStatus } from "@prisma/client";
 const router = express.Router();
 
 type Room = {
@@ -59,13 +60,74 @@ router.post("/", async (req: express.Request, res: express.Response) => {
   }
 });
 
+//
 router.get("/", async (req: express.Request, res: express.Response) => {
   try {
-    const rooms = await prisma.room.findMany();
-    return res.status(200).json(rooms);
+    const userId = req.session.userId;
+    // ищем все комнаты
+    const rooms = await prisma.room.findMany({
+      select: {
+        id: true,
+        nameRoom: true,
+        isPrivate: true,
+        ownerId: true,
+
+        // Мой запрос в комнату (0..1)
+        requests: userId
+          ? {
+              where: { userId },
+              select: { status: true },
+              take: 1,
+            }
+          : false,
+
+        // Я участник комнаты?
+        admissions: userId
+          ? {
+              where: { userId },
+              select: { id: true },
+              take: 1,
+            }
+          : false,
+      },
+      orderBy: { nameRoom: "asc" },
+    });
+
+    const payload = rooms.map((room) => {
+      // является ли пользователь владельцем комнаты
+      const isOwner = userId ? room.ownerId === userId : false;
+
+      // Является ли пользователь участником комнаты
+      const isMember =
+        isOwner || // если я владелец → я участник // или
+        ("admissions" in room && room.admissions?.length > 0); // если есть запись в RoomAdmission для меня → я участник
+
+      // Мои запросы к данной комнате
+      const myRequestStatus =
+        "requests" in room && room.requests.length
+          ? room.requests[0].status
+          : null;
+
+      const hasAccess = room.isPrivate
+        ? isOwner || isMember || myRequestStatus === RoomRequestStatus.APPROVED
+        : true;
+
+      return {
+        id: room.id,
+        nameRoom: room.nameRoom,
+        isPrivate: room.isPrivate,
+        ownerId: room.ownerId,
+
+        isOwner,
+        isMember,
+        myRequestStatus,
+        hasAccess,
+      };
+    });
+
+    res.json(payload);
   } catch (error) {
     console.log(error);
-    return res.status(400).json({ message: "Ошибка при получении комнат" });
   }
 });
 

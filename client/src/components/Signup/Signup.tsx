@@ -276,28 +276,9 @@ export default function Signup() {
                 },
               }}
             >
-              Войти
+              Зарегистрироваться
             </Button>
           </Box>
-
-          {/* Ссылка «Зарегистрироваться» */}
-          <Link
-            component={NavLink}
-            to="/signup"
-            sx={{
-              textDecoration: "none",
-              textTransform: "uppercase",
-              marginTop: 1,
-              fontSize: "0.8rem",
-              letterSpacing: 1,
-              color: COLORS.textMuted,
-              "&:hover": {
-                color: COLORS.accentColor,
-              },
-            }}
-          >
-            Зарегистрироваться
-          </Link>
 
           <Button
             type="button"

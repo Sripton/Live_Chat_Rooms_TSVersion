@@ -33,9 +33,14 @@ export default function Navbar() {
   const navigate = useNavigate(); // Навигация
   const location = useLocation(); // Предоставляет объект с информацией о текущем URL.
   const dispatch = useAppDispatch();
-  const menuItems: string[] = ["Главная", "Мой профиль", "Войти", "Выход"];
 
-  const { userName } = useAppSelector((store) => store.user);
+  // Забираем данные пользователя из store
+  const { userName, userId } = useAppSelector((store) => store.user);
+
+  // логика для отображения меню
+  const menuItems: string[] = !userId
+    ? ["Главная", "Войти"]
+    : ["Главная", "Мой профиль", "Выход"];
 
   // Обработка кликов по пунктам меню
   const handleMenuClick = async (text: string) => {
@@ -76,8 +81,6 @@ export default function Navbar() {
         return;
     }
   };
-
-  console.log("userName", userName);
 
   return (
     <>

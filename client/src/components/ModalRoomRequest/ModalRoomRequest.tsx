@@ -38,7 +38,7 @@ const COLORS = {
 
 import { useAppSelector, useAppDispatch } from "../../redux/store/hooks";
 import { sendRoomRequest } from "../../redux/actions/requestActions";
-import { CLEAR_ROOM_REQUEST_STATE } from "../../redux/types/requestTypes";
+import { CLEAR_ROOM_REQUEST_STATE } from "../../redux/types/roomRequestTypes";
 
 // Тип для пропсов компонента
 interface ModalRommRequestProps {

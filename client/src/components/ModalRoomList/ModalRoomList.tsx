@@ -30,6 +30,8 @@ import LockIcon from "@mui/icons-material/Lock";
 import PublicIcon from "@mui/icons-material/Public";
 import SearchIcon from "@mui/icons-material/Search";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 import { useAppSelector } from "../../redux/store/hooks";
 import { lightGreen } from "@mui/material/colors";
@@ -127,6 +129,8 @@ export default function ModalRoomList({
   // функция для сортировки комнат
   const handleToggleSort = () =>
     setSortMode((prev) => (prev === "az" ? "za" : "az"));
+
+  console.log("isMobile", isMobile);
 
   return (
     <Dialog
@@ -244,6 +248,22 @@ export default function ModalRoomList({
                 border: "1px solid rgba(183,148,244,0.18)",
               }}
             />
+
+            {/* отображение поля поиск при мобильном экране */}
+            {isMobile && (
+              <IconButton
+                onClick={() => setControlsOpen((p) => !p)}
+                sx={{
+                  color: "#e5e7eb",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "12px",
+                }}
+                aria-label="toggle-controls"
+              >
+                {controlsOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            )}
           </Stack>
         </Toolbar>
 

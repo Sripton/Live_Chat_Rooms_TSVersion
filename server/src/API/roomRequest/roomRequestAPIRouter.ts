@@ -6,6 +6,7 @@ const router = express.Router();
 type CreateRoomRequestBody = {
   roomId: string;
 };
+
 router.post("/", async (req: express.Request, res: express.Response) => {
   try {
     const { roomId } = req.body as CreateRoomRequestBody;
@@ -62,7 +63,7 @@ router.post("/", async (req: express.Request, res: express.Response) => {
       },
     });
 
-    // Отправляем на клиент 
+    // Отправляем на клиент
     res.status(200).json({
       message: "Запрос на доступ отправлен",
       request: createRequest,
@@ -80,5 +81,108 @@ router.post("/", async (req: express.Request, res: express.Response) => {
     return res.status(500).json({ message: "Ошибка сервера" });
   }
 });
+
+router.get(
+  "/userRequest",
+  async (req: express.Request, res: express.Response) => {
+    try {
+      // Забираем id пользовтаеля из сессии
+      const userId = "cmk8h8bpf0000p8oscttfjmnf";
+
+      // // 1. Проверим, существует ли вообще таблица и соединение
+      // console.log("✅ Prisma подключен:", prisma ? "Да" : "Нет");
+
+      // Исходящие запросы пользователя (где он requester / userId)
+      // const outgoing = await prisma.roomRequest.findMany({
+      //   where: { userId: userId },
+      //   orderBy: { createdAt: "desc" },
+      //   include: {
+      //     room: {
+      //       select: {
+      //         id: true,
+      //         nameRoom: true,
+      //         ownerId: true,
+      //         // isPrivate: ???
+      //       },
+      //     },
+      //   },
+      // });
+
+      // Входящие запросы пользователя (где он ownerId)
+      // const incoming = await prisma.roomRequest.findMany({
+      //   where: { ownerId: userId },
+      //   orderBy: { createdAt: "desc" },
+      //   include: {
+      //     requester: {
+      //       select: {
+      //         username: true,
+      //         avatar: true,
+      //       },
+      //     },
+
+      //     room: {
+      //       select: {
+      //         id: true,
+      //         nameRoom: true,
+      //         ownerId: true,
+      //         // isPrivate: ???
+      //       },
+      //     },
+      //   },
+      // });
+
+      const [incoming, outgoing] = await prisma.$transaction([
+        // Исходящие запросы пользователя (где он requester / userId)
+        prisma.roomRequest.findMany({
+          // кто отправялет запрос
+          where: { userId: userId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            // в какую комнату
+            room: {
+              select: {
+                id: true,
+                nameRoom: true,
+                ownerId: true,
+                isPrivate: true,
+              },
+            },
+          },
+        }),
+
+        // Входящие запросы пользователя (где он ownerId)
+        prisma.roomRequest.findMany({
+          // кто является воалдельцем данной комнаты
+          where: { ownerId: userId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            // кто просит доступ
+            requester: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+              },
+            },
+            // к какой комнате запрос
+            room: {
+              select: {
+                id: true,
+                nameRoom: true,
+                ownerId: true,
+                isPrivate: true,
+              },
+            },
+          },
+        }),
+      ]);
+      // отдаем резульаты
+      res.status(200).json({ incoming, outgoing });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Ошибка получения запросов" });
+    }
+  }
+);
 
 export default router;
