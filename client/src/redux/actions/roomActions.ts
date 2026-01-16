@@ -5,13 +5,13 @@ import {
   GET_USER_ROOM,
 } from "../types/roomTypes";
 import type { AppDispatch } from "../store/store";
-import type { Room } from "../types/roomTypes";
+import type { Room, RoomListDTO } from "../types/roomTypes";
 import axios from "axios";
 
 export const fetchAllRooms = () => async (dispatch: AppDispatch) => {
   try {
     //  GET-запрос к API — получаем массив всех комнат
-    const { data } = await axios.get(`/api/rooms`);
+    const { data } = await axios.get<RoomListDTO[]>(`/api/rooms`);
     dispatch({ type: GET_ALL_ROOMS, payload: data });
   } catch (error) {
     console.error("Ошибка при получении всех комнат:", error);
@@ -27,8 +27,13 @@ type RoomCreate = {
 export const createRoomsSubmit =
   (inputs: RoomCreate) => async (dispatch: AppDispatch) => {
     try {
-      const { data } = await axios.post<Room>(`/api/rooms`, inputs);
-      dispatch({ type: SET_CREATE_ROOM, payload: data });
+      
+      //const { data } = await axios.post<Room>(`/api/rooms`, inputs);
+      // dispatch({ type: SET_CREATE_ROOM, payload: data });
+
+      await axios.post<Room>(`/api/rooms`, inputs);
+      // после создания комнаты перезагрузить список
+      dispatch(fetchAllRooms()); // перетрет allRooms правильным DTO
     } catch (error) {
       console.log(error);
     }

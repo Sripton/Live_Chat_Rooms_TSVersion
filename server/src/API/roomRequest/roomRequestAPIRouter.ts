@@ -49,11 +49,11 @@ router.post("/", async (req: express.Request, res: express.Response) => {
     // Если запрос сущесвтует, даем пользовтаелю информацию об статусе
     if (lastRequest) {
       if (lastRequest.status === "PENDING") {
-        return res.status(400).json({ message: "Запрос уже отправлен" });
+        return res.status(409).json({ message: "Запрос уже отправлен" });
       }
       if (lastRequest.status === "REJECTED") {
         return res.status(403).json({ message: "Доступ отклонён!." });
-      }
+      } 
     }
 
     // Создаём новый запрос

@@ -87,6 +87,8 @@ export default function ModalRoomRequest({
       setOpenSnackbar((prev) => !prev);
     }
   }, [show]);
+  console.log("request", request);
+  console.log("error", error);
 
   return ReactDOM.createPortal(
     <Fade in={openRequestCreate} timeout={300}>

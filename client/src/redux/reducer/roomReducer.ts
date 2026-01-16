@@ -23,9 +23,9 @@ export default function roomReducer(
     case SET_CREATE_ROOM:
       return {
         ...state,
-        allRooms: [payload, ...state.allRooms],
-        userRooms: [payload, ...state.userRooms],
-        currentRoom: payload,
+        // allRooms: [payload, ...state.allRooms], после создания комнаты   перезагрузить список
+        userRooms: [payload, ...state.userRooms], // отвечает только за userRooms
+        currentRoom: payload, // отвечает только за currentRoom
       };
 
     case GET_ALL_ROOMS:

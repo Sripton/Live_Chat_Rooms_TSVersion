@@ -47,12 +47,18 @@ const COLORS = {
   gradient: "linear-gradient(135deg, #2a183d 0%, #1d102f 100%)",
 };
 
+type RequestToastType = "info" | "error";
+
 // Тип для пропсов компонента
 interface ModalRoomListProps {
   openAll: boolean;
   view: "open" | "private";
   onCloseRoomList: () => void;
   isSmall: boolean;
+  userId: string;
+  setOpenRequestModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setRoomId: React.Dispatch<React.SetStateAction<string>>;
+  showRequestError: (text: string, type: RequestToastType) => void;
 }
 
 // тип для сортировки комнат
@@ -66,6 +72,7 @@ export default function ModalRoomList({
   userId,
   setOpenRequestModal,
   setRoomId,
+  showRequestError,
 }: ModalRoomListProps) {
   // ----------------- Для создания адаптивного диалогового окна ------------
   // Добавляем тип Theme
@@ -162,11 +169,19 @@ export default function ModalRoomList({
       return;
     }
 
+    if (room.myRequestStatus === "PENDING") {
+      showRequestError("Запрос уже отправлен", "info");
+      return;
+    }
+
+    if (room.myRequestStatus === "REJECTED") {
+      showRequestError("Доступ отклонён", "error");
+      return;
+    }
+
     setRoomId(room.id);
     setOpenRequestModal(true);
   };
-
-
 
   return (
     <Dialog

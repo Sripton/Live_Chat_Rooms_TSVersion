@@ -15,6 +15,8 @@ import {
   Zoom,
   Slide,
   Link,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 
@@ -173,8 +175,19 @@ export default function ChatRooms() {
   // состояние для переключения  статуса открытых/приватных комнат
   const [roomsView, setRoomsView] = useState<string>("");
 
-  // остояние для отслежитания по id к какой првиатной комнате идет запрос
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  // состояние запроса при стату PENDING/REJECTED
+  const [requestError, setRequestError] = useState<{
+    open: boolean;
+    text: string;
+    type: "info" | "error";
+  }>({
+    open: false,
+    text: "",
+    type: "info",
+  });
+
+  const showRequestError = (text: string, type: "info" | "error") =>
+    setRequestError({ open: true, text, type });
 
   return (
     <Box
@@ -332,7 +345,7 @@ export default function ChatRooms() {
                 <Box sx={{ p: isMobile ? 2 : 2.5 }}>
                   <Stack spacing={1}>
                     {openRooms
-                      .slice(0, isMobile ? 3 : isLargeDesktop ? 6 : 5)
+                      .slice(0, isMobile ? 3 : isLargeDesktop ? 5 : 4)
                       .map((room, index) => (
                         <Grow in={true} timeout={index * 100} key={room.id}>
                           <Box
@@ -563,7 +576,7 @@ export default function ChatRooms() {
                 <Box sx={{ p: isMobile ? 2 : 2.5 }}>
                   <Stack spacing={1}>
                     {privateRooms
-                      .slice(0, isMobile ? 3 : isLargeDesktop ? 6 : 5)
+                      .slice(0, isMobile ? 3 : isLargeDesktop ? 5 : 4)
                       .map((room, index) => (
                         <Grow in={true} timeout={index * 100} key={room.id}>
                           <Box
@@ -571,15 +584,33 @@ export default function ChatRooms() {
                             sx={{ textDecoration: "none" }}
                             onClick={() => {
                               // если пользователь не зарегистрирован
-                              if (!userId) {
+                              if (!userId && room.isPrivate) {
                                 // отправялем пользователя регистрироваться/войти
                                 navigate("/signin");
+                                return;
                               }
                               // автоматический доступ для владельцев комнат
                               if (String(room.ownerId) === String(userId)) {
                                 // переход в комнату
                                 navigate(`/chatcards/${room.id}`);
+                                return;
                               }
+                              if (room?.hasAccess) {
+                                navigate(`/chatcards/${room.id}`);
+                                return;
+                              }
+                              if (room.myRequestStatus === "PENDING") {
+                                showRequestError(
+                                  "Запрос уже отправлен",
+                                  "info"
+                                );
+                                return;
+                              }
+                              if (room.myRequestStatus === "REJECTED") {
+                                showRequestError("Доступ отклонён", "error");
+                                return;
+                              }
+
                               setOpenRequestModal((prev) => !prev);
                               setRoomId(room.id);
                             }}
@@ -675,7 +706,7 @@ export default function ChatRooms() {
                         </Grow>
                       ))}
                     {privateRooms.length >
-                      (isMobile ? 3 : isLargeDesktop ? 7 : 5) && (
+                      (isMobile ? 3 : isLargeDesktop ? 5 : 4) && (
                       <Zoom in={true} timeout={500}>
                         <Button
                           fullWidth
@@ -989,12 +1020,27 @@ export default function ChatRooms() {
                                 },
                               },
                             }}
+                            onClick={() => {
+                              if (!userId && room.isPrivate) {
+                                navigate("/signin");
+                                return;
+                              }
+                              if (!room.isPrivate) {
+                                navigate(`/chatcards/${room.id}`);
+                                return;
+                              }
+                              if (room.hasAccess) {
+                                navigate(`/chatcards/${room.id}`);
+                                return;
+                              }
+                            }}
                           >
                             <Stack
                               direction="row"
                               alignItems="center"
                               spacing={2}
                             >
+                              {/* иконки к открытым/приватным комнатам  */}
                               <Box
                                 sx={{
                                   width: 48,
@@ -1012,6 +1058,7 @@ export default function ChatRooms() {
                               >
                                 {room.isPrivate ? "🔒" : "🌐"}
                               </Box>
+                              {/*Комнаты */}
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Stack
                                   direction="row"
@@ -1475,8 +1522,86 @@ export default function ChatRooms() {
           setOpenRequestModal={setOpenRequestModal} // для открытия модального окна для отправки запроса
           setRoomId={setRoomId} // id данной комнаты
           userId={userId} // id  пользователя
+          showRequestError={showRequestError}
         />
       )}
+      <Snackbar
+        open={requestError.open}
+        autoHideDuration={3000}
+        onClose={() => setRequestError((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+        sx={{
+          "& .MuiSnackbar-root": {
+            bottom: "24px !important",
+          },
+        }}
+      >
+        <Alert
+          severity={requestError.type}
+          onClose={() => setRequestError((prev) => ({ ...prev, open: false }))}
+          sx={{
+            width: "100%",
+            maxWidth: { xs: "300px", sm: "400px" },
+            borderRadius: "12px",
+            backdropFilter: "blur(10px)",
+            border: `1px solid ${
+              requestError.type === "error"
+                ? "rgba(239, 68, 68, 0.3)"
+                : "rgba(183, 148, 244, 0.3)"
+            }`,
+            background:
+              requestError.type === "error"
+                ? "rgba(35, 20, 51, 0.85)"
+                : "rgba(35, 20, 51, 0.85)",
+            color: "#e5e7eb",
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 500,
+            "& .MuiAlert-icon": {
+              color: requestError.type === "error" ? "#ef4444" : "#b794f4",
+              fontSize: "1.25rem",
+            },
+            "& .MuiAlert-message": {
+              padding: "8px 0",
+              fontSize: "0.95rem",
+            },
+            "& .MuiAlert-action": {
+              paddingLeft: 1,
+              "& .MuiIconButton-root": {
+                color: COLORS.textMuted,
+                "&:hover": {
+                  color: COLORS.accentColor,
+                  background: "rgba(183, 148, 244, 0.1)",
+                },
+              },
+            },
+            // Градиентный эффект для верхней границы
+            position: "relative",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "2px",
+              background:
+                requestError.type === "error"
+                  ? "linear-gradient(90deg, #ef4444, transparent)"
+                  : "linear-gradient(90deg, #b794f4, transparent)",
+              borderRadius: "12px 12px 0 0",
+            },
+            // Тень
+            boxShadow:
+              requestError.type === "error"
+                ? "0 8px 32px rgba(239, 68, 68, 0.2)"
+                : "0 8px 32px rgba(183, 148, 244, 0.2)",
+          }}
+        >
+          {requestError.text}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

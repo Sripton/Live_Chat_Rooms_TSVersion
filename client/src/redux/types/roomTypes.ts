@@ -13,7 +13,7 @@ export const GET_ONE_ROOM = "GET_ONE_ROOM";
 
 // описание одной комнаты
 // форма данных, которые приходят с сервера
-// не Redux, модель данных
+// то, что реально в бд
 export type Room = {
   id: string;
   nameRoom: string; // имя создаваемой комнаты
@@ -21,17 +21,28 @@ export type Room = {
   ownerId: string;
 };
 
+// расширенный тип для списка (то, что приходит из GET /api/rooms)
+export type RoomRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+// RoomListDTO расширяет базовый тип Room, добавляя к нему новые поля
+export type RoomListDTO = Room & {
+  isOwner: boolean;
+  isMember: boolean;
+  myRequestStatus: RoomRequestStatus | null;
+  hasAccess: boolean;
+};
+
 // состояние редьюсера
 // то, что хранится в Redux store
 // контейнер, внутри которого лежат сущности
 export type RoomState = {
-  allRooms: Room[]; // массив всех комнат
+  allRooms: RoomListDTO[]; // массив всех комнат
   userRooms: Room[]; // массив всех комнат пользователя
   currentRoom: Room | null; // данные текущей выбранной комнаты
 };
 
 export type RoomActions =
   | { type: typeof SET_CREATE_ROOM; payload: Room }
-  | { type: typeof GET_ALL_ROOMS; payload: Room[] }
+  | { type: typeof GET_ALL_ROOMS; payload: RoomListDTO[] }
   | { type: typeof GET_USER_ROOM; payload: Room[] }
   | { type: typeof GET_ONE_ROOM; payload: Room | null };

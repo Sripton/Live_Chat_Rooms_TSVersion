@@ -142,6 +142,11 @@ export default function UserDashBoard() {
     setTabIndex(newValue);
   };
 
+  // ------------- При меньших размераз экрана ----------------
+  const theme = useTheme();
+  //  ЭКРАНЫ МЕНЬШЕ lg (1200px)
+  const isSmall = useMediaQuery(theme.breakpoints.down("lg"));
+
   // ------------------ Данные из store ------------------
   // Забираем данные  User из store
   const { userId, userAvatar, userName } = useAppSelector(
@@ -162,10 +167,6 @@ export default function UserDashBoard() {
 
   // Забираем комнаты пользователя из store
   const { userRooms } = useAppSelector((store) => store.room);
-
-  const theme = useTheme();
-  //  ЭКРАНЫ МЕНЬШЕ lg (1200px)
-  const isSmall = useMediaQuery(theme.breakpoints.down("lg"));
 
   // ---------------- Загрузка запрсов -----------
   // Забираем входящие и исходяшие запросы из store
