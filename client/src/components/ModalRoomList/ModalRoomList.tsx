@@ -55,10 +55,11 @@ interface ModalRoomListProps {
   view: "open" | "private";
   onCloseRoomList: () => void;
   isSmall: boolean;
-  userId: string;
   setOpenRequestModal: React.Dispatch<React.SetStateAction<boolean>>;
   setRoomId: React.Dispatch<React.SetStateAction<string>>;
   showRequestError: (text: string, type: RequestToastType) => void;
+  handlePrivateRoomClick: (room: any) => void;
+  getPrivateState: (room: any) => string;
 }
 
 // тип для сортировки комнат
@@ -69,10 +70,8 @@ export default function ModalRoomList({
   view,
   onCloseRoomList,
   isSmall,
-  userId,
-  setOpenRequestModal,
-  setRoomId,
-  showRequestError,
+  handlePrivateRoomClick,
+  getPrivateState,
 }: ModalRoomListProps) {
   // ----------------- Для создания адаптивного диалогового окна ------------
   // Добавляем тип Theme
@@ -116,11 +115,11 @@ export default function ModalRoomList({
   // Сортируем искомые комнаты
   const filteredList = useMemo(() => {
     const q = search.trim().toLowerCase(); // данные в строке поиска
-    const byName = (r: any) => (r.nameRoom || "").toString(); // ф-я возвращает только навания комнат
+    const byName = (r: any) => (r.nameRoom || "").toString(); // ф-я возвращает только названия комнат
     const list = !q // если строка пуста
       ? currentList // возвращаем комнаты
       : currentList.filter((room) => byName(room).toLowerCase().includes(q)); // проверка на содержание искомых комнат
-    const sorted = [...list].sort((a, b) => byName(a).localeCompare(b)); // сортировка комнат
+    const sorted = [...list].sort((a, b) => byName(a).localeCompare(byName(b))); // сортировка комнат
     return sortMode === "az" ? sorted : sorted.reverse(); // сортировка по возрастанию/убыванию
   }, [search, currentList, sortMode]); // добавляем зависмости
 
@@ -141,47 +140,7 @@ export default function ModalRoomList({
   const handleToggleSort = () =>
     setSortMode((prev) => (prev === "az" ? "za" : "az"));
 
-  // ---------------- Действия с комнатой --------------
-  // хук для навигации
   const navigate = useNavigate();
-
-  // функция для проверки на доступ к комнатам
-  const handleEnterRoom = (room: any) => {
-    if (!room) return;
-
-    // Открытая комната — доступна всем
-    if (!room.isPrivate) {
-      navigate(`/chatcards/${room.id}`);
-      return;
-    }
-    // если приватная комната доступ только для зарегистрированных
-    if (!userId) {
-      navigate("/signin");
-      return;
-    }
-
-    // является ли пользовтель владельцем даннной комнаты
-    const isOwnerId = room.ownerId === userId;
-
-    // если пользователь яв-ся владельцем/ есть доступ
-    if (isOwnerId || room.hasAccess) {
-      navigate(`/chatcards/${room.id}`);
-      return;
-    }
-
-    if (room.myRequestStatus === "PENDING") {
-      showRequestError("Запрос уже отправлен", "info");
-      return;
-    }
-
-    if (room.myRequestStatus === "REJECTED") {
-      showRequestError("Доступ отклонён", "error");
-      return;
-    }
-
-    setRoomId(room.id);
-    setOpenRequestModal(true);
-  };
 
   return (
     <Dialog
@@ -449,103 +408,109 @@ export default function ModalRoomList({
         }}
       >
         <List dense disablePadding>
-          {filteredList.map((room, index) => (
-            <Grow in={true} timeout={index * 70} key={room.id}>
-              <ListItem disablePadding sx={{ mb: 1 }}>
-                <ListItemButton
-                  // допуск в комнату
-                  onClick={() => handleEnterRoom(room)}
-                  sx={{
-                    borderRadius: "16px",
-                    p: 2,
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    backdropFilter: "blur(8px)",
-                    boxShadow: "0 10px 26px rgba(0,0,0,0.55)",
-                    position: "relative",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: "3px",
-                      background: room.isPrivate
-                        ? "linear-gradient(180deg, #ef4444, transparent)"
-                        : "linear-gradient(180deg, #b794f4, transparent)",
-                      opacity: 0,
-                      transition: "opacity 0.25s ease",
-                    },
-                    "&:hover": {
-                      transform: "translateX(6px)",
-                      background: "rgba(183,148,244,0.08)",
-                      borderColor: "rgba(183,148,244,0.28)",
-                      boxShadow: "0 14px 34px rgba(0,0,0,0.7)",
-                      "&::before": { opacity: 1 },
-                    },
-                    transition:
-                      "transform .25s ease, background-color .25s ease, border-color .25s ease, box-shadow .25s ease",
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 44 }}>
-                    <Box
-                      sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "12px",
+          {filteredList.map((room, index) => {
+            let icon = "🌐";
+            let metaText = "Открытая комната";
+            if (room.isPrivate) {
+              // если комната приватная отдаем функции getPrivateState
+              const state = getPrivateState(room);
+              icon = state === "OWNER" || state === "ACCESS" ? "🔓" : "🔒";
+              metaText =
+                state === "OWNER"
+                  ? "Вы владелец"
+                  : state === "ACCESS"
+                  ? "Доступ разрешён"
+                  : state === "PENDING"
+                  ? "Запрос отправлен"
+                  : state === "REJECTED"
+                  ? "Доступ отклонён"
+                  : "Требуется доступ";
+            }
+
+            return (
+              <Grow in={true} timeout={index * 70} key={room.id}>
+                <ListItem disablePadding sx={{ mb: 1 }}>
+                  <ListItemButton
+                    // допуск в комнату
+                    onClick={() => {
+                      // если комната не приватная досутп для всех
+                      if (!room.isPrivate) {
+                        navigate(`/chatcards/${room.id}`);
+                        return;
+                      }
+                      // если комната приватная
+                      handlePrivateRoomClick(room);
+                    }}
+                    sx={{
+                      borderRadius: "16px",
+                      p: 2,
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      backdropFilter: "blur(8px)",
+                      boxShadow: "0 10px 26px rgba(0,0,0,0.55)",
+                      position: "relative",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: "3px",
                         background: room.isPrivate
-                          ? "rgba(239,68,68,0.12)"
-                          : "rgba(183,148,244,0.12)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {room.isPrivate ? (
-                        <LockIcon
-                          sx={{ color: COLORS.accentColor, fontSize: 20 }}
-                        />
-                      ) : (
-                        <PublicIcon
-                          sx={{ color: COLORS.accentColor, fontSize: 20 }}
-                        />
-                      )}
-                    </Box>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Typography
+                          ? "linear-gradient(180deg, #ef4444, transparent)"
+                          : "linear-gradient(180deg, #b794f4, transparent)",
+                        opacity: 0,
+                        transition: "opacity 0.25s ease",
+                      },
+                      "&:hover": {
+                        transform: "translateX(6px)",
+                        background: "rgba(183,148,244,0.08)",
+                        borderColor: "rgba(183,148,244,0.28)",
+                        boxShadow: "0 14px 34px rgba(0,0,0,0.7)",
+                        "&::before": { opacity: 1 },
+                      },
+                      transition:
+                        "transform .25s ease, background-color .25s ease, border-color .25s ease, box-shadow .25s ease",
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 44 }}>
+                      <Box
                         sx={{
-                          fontFamily:
-                            "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                          fontWeight: 600,
-                          fontSize: "0.95rem",
-                          color: "#e5e7eb",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          width: 36,
+                          height: 36,
+                          borderRadius: "12px",
+                          background: room.isPrivate
+                            ? "rgba(239,68,68,0.12)"
+                            : "rgba(183,148,244,0.12)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
                         }}
                       >
-                        {room.nameRoom}
-                      </Typography>
-                    }
-                    secondary={
-                      room.isPrivate ? (
+                        {icon}
+                      </Box>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
                         <Typography
                           sx={{
-                            fontSize: "0.78rem",
-                            color: COLORS.textMuted,
-                            mt: 0.25,
                             fontFamily:
                               "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                            fontWeight: 600,
+                            fontSize: "0.95rem",
+                            color: "#e5e7eb",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
-                          Приватная комната
+                          {room.nameRoom}
                         </Typography>
-                      ) : (
+                      }
+                      secondary={
                         <Typography
                           sx={{
                             fontSize: "0.75rem",
@@ -553,31 +518,15 @@ export default function ModalRoomList({
                             mt: 0.25,
                           }}
                         >
-                          Открытая комната
+                          {metaText}
                         </Typography>
-                      )
-                    }
-                  />
-                  <Chip
-                    size="small"
-                    label={room.isPrivate ? "Доступ" : "Войти"}
-                    sx={{
-                      ml: 1.5,
-                      height: 26,
-                      borderRadius: "12px",
-                      bgcolor: room.isPrivate
-                        ? "rgba(239,68,68,0.10)"
-                        : "rgba(183,148,244,0.12)",
-                      color: room.isPrivate ? "#fca5a5" : COLORS.accentColor,
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      fontWeight: 700,
-                      fontSize: "0.75rem",
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            </Grow>
-          ))}
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </Grow>
+            );
+          })}
 
           {currentList.length === 0 && (
             <Box

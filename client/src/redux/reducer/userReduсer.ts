@@ -9,7 +9,7 @@ import {
 import type { UserActions } from "../types/userTypes";
 
 export type UserState = {
-  userId: number | null;
+  userId: string | null;
   userName: string | null;
   userAvatar: string | null;
   isAuthenticated: boolean;

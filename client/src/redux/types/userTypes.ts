@@ -16,7 +16,7 @@ export const LOGOUT_USER = "LOGOUT_USER";
 
 // Описываем  то, что нужно Redux-стору
 export type UserPayload = {
-  userId: number;
+  userId: string;
   userName: string | null;
   userAvatar: string | null;
 };

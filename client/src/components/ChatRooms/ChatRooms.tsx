@@ -54,6 +54,10 @@ const COLORS = {
   textMuted: "#9ca3af",
   gradient: "linear-gradient(135deg, #2a183d 0%, #1d102f 100%)",
 };
+
+// Тип для roomsView (Union)
+type RoomView = "open" | "private";
+
 export default function ChatRooms() {
   // ----------------- Модальное окно для создания комнаты -----------------
   // состояние для модального окна создающего комнату
@@ -62,8 +66,11 @@ export default function ChatRooms() {
   // хук для навигации
   const navigate = useNavigate();
   // забираем id пользователя из store
-  const userId = useAppSelector((store) => store.user.userId);
+  const { userId } = useAppSelector((store) => store.user);
   // функция для обработки создания комнаты
+
+  console.log("typeof userId", typeof userId); // string
+
   const handleCreateRoomClick = () => {
     // если пользователь ни зарегистрирован
     if (!userId) {
@@ -173,7 +180,7 @@ export default function ChatRooms() {
   const [openModalRoomList, setOpenModalRoomList] = useState<boolean>(false);
 
   // состояние для переключения  статуса открытых/приватных комнат
-  const [roomsView, setRoomsView] = useState<string>("");
+  const [roomsView, setRoomsView] = useState<RoomView>("open");
 
   // состояние запроса при стату PENDING/REJECTED
   const [requestError, setRequestError] = useState<{
@@ -188,6 +195,70 @@ export default function ChatRooms() {
 
   const showRequestError = (text: string, type: "info" | "error") =>
     setRequestError({ open: true, text, type });
+
+  // -------------- Достыпные комнаты для пользователя ----------------
+  const getPrivateState = useMemo(() => {
+    return (room: any) => {
+      // Пользователь яляется владельцем комнаты
+      const isOwner = String(room.ownerId) === String(userId) || room.isOwner;
+      // Пользователь имеет доступ к комнате
+      const hasAccess =
+        !!room.hasAccess || // undefined, 0, null ......
+        room.myRequestStatus === "APPROVED" ||
+        room.isMember;
+
+      if (isOwner) return "OWNER";
+      if (hasAccess) return "ACCESS";
+      if (room.myRequestStatus === "PENDING") return "PENDING";
+      if (room.myRequestStatus === "REJECTED") return "REJECTED";
+      return "NONE";
+    };
+  }, [userId]);
+
+  // сортировка комнат чтобы “доступные” были выше
+  const privateRoomsSorted = useMemo(() => {
+    const priority: Record<string, number> = {
+      OWNER: 0,
+      ACCESS: 1,
+      PENDING: 2,
+      NONE: 3,
+      REJECTED: 4,
+    };
+
+    return [...privateRooms].sort((a, b) => {
+      const pa = priority[getPrivateState(a)];
+      const pb = priority[getPrivateState(b)];
+      if (pa !== pb) return pa - pb;
+      return (a.nameRoom || "").localeCompare(b.nameRoom || "");
+    });
+  }, [privateRooms, getPrivateState]);
+
+  const handlePrivateRoomClick = (room: any) => {
+    if (!userId) {
+      navigate("/signin");
+      return;
+    }
+
+    const state = getPrivateState(room);
+
+    if (state === "OWNER" || state === "ACCESS") {
+      navigate(`/chatcards/${room.id}`);
+      return;
+    }
+
+    if (state === "PENDING") {
+      showRequestError("Запрос уже отправлен", "info");
+      return;
+    }
+
+    if (state === "REJECTED") {
+      showRequestError("Доступ отклонён", "error");
+      return;
+    }
+
+    setRoomId(room.id);
+    setOpenRequestModal(true); // важно: true, а не toggle
+  };
 
   return (
     <Box
@@ -575,136 +646,119 @@ export default function ChatRooms() {
               <Collapse in={!isMobile || showPrivateRooms}>
                 <Box sx={{ p: isMobile ? 2 : 2.5 }}>
                   <Stack spacing={1}>
-                    {privateRooms
+                    {privateRoomsSorted
                       .slice(0, isMobile ? 3 : isLargeDesktop ? 5 : 4)
-                      .map((room, index) => (
-                        <Grow in={true} timeout={index * 100} key={room.id}>
-                          <Box
-                            component={NavLink}
-                            sx={{ textDecoration: "none" }}
-                            onClick={() => {
-                              // если пользователь не зарегистрирован
-                              if (!userId && room.isPrivate) {
-                                // отправялем пользователя регистрироваться/войти
-                                navigate("/signin");
-                                return;
-                              }
-                              // автоматический доступ для владельцев комнат
-                              if (String(room.ownerId) === String(userId)) {
-                                // переход в комнату
-                                navigate(`/chatcards/${room.id}`);
-                                return;
-                              }
-                              if (room?.hasAccess) {
-                                navigate(`/chatcards/${room.id}`);
-                                return;
-                              }
-                              if (room.myRequestStatus === "PENDING") {
-                                showRequestError(
-                                  "Запрос уже отправлен",
-                                  "info"
-                                );
-                                return;
-                              }
-                              if (room.myRequestStatus === "REJECTED") {
-                                showRequestError("Доступ отклонён", "error");
-                                return;
-                              }
-
-                              setOpenRequestModal((prev) => !prev);
-                              setRoomId(room.id);
-                            }}
-                          >
-                            <Paper
-                              elevation={0}
-                              sx={{
-                                p: 2,
-                                borderRadius: "12px",
-                                background: "rgba(255,255,255,0.02)",
-                                border: "1px solid rgba(255,255,255,0.05)",
-                                cursor: "pointer",
-                                transition:
-                                  "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                                position: "relative",
-                                overflow: "hidden",
-                                "&::before": {
-                                  content: '""',
-                                  position: "absolute",
-                                  left: 0,
-                                  top: 0,
-                                  bottom: 0,
-                                  width: "3px",
-                                  background: room.isPrivate
-                                    ? "linear-gradient(180deg, #ef4444, transparent)"
-                                    : "linear-gradient(180deg, #b794f4, transparent)",
-
-                                  opacity: 0,
-                                  transition: "opacity 0.3s ease",
-                                },
-                                "&:hover": {
-                                  transform: "translateX(4px)",
-                                  background: "rgba(183,148,244,0.08)",
-                                  borderColor: "rgba(183,148,244,0.3)",
-                                  boxShadow:
-                                    "0 4px 20px rgba(183,148,244,0.15)",
-                                  "&::before": {
-                                    opacity: 1,
-                                  },
-                                },
-                                ...styleAnimation(index),
-                              }}
+                      .map((room, index) => {
+                        const state = getPrivateState(room);
+                        const icon =
+                          state === "OWNER" || state === "ACCESS" ? "🔓" : "🔒";
+                        const metaText =
+                          state === "OWNER"
+                            ? "Вы владелец"
+                            : state === "ACCESS"
+                            ? "Доступ разрешён"
+                            : state === "PENDING"
+                            ? "Запрос отправлен"
+                            : state === "REJECTED"
+                            ? "Доступ отклонён"
+                            : "Требуется доступ";
+                        return (
+                          <Grow in={true} timeout={index * 100} key={room.id}>
+                            <Box
+                              component={NavLink}
+                              sx={{ textDecoration: "none" }}
+                              onClick={() => handlePrivateRoomClick(room)}
                             >
-                              <Stack
-                                direction="row"
-                                alignItems="center"
-                                spacing={1.5}
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  p: 2,
+                                  borderRadius: "12px",
+                                  background: "rgba(255,255,255,0.02)",
+                                  border: "1px solid rgba(255,255,255,0.05)",
+                                  cursor: "pointer",
+                                  transition:
+                                    "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                  "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: "3px",
+                                    background: room.isPrivate
+                                      ? "linear-gradient(180deg, #ef4444, transparent)"
+                                      : "linear-gradient(180deg, #b794f4, transparent)",
+
+                                    opacity: 0,
+                                    transition: "opacity 0.3s ease",
+                                  },
+                                  "&:hover": {
+                                    transform: "translateX(4px)",
+                                    background: "rgba(183,148,244,0.08)",
+                                    borderColor: "rgba(183,148,244,0.3)",
+                                    boxShadow:
+                                      "0 4px 20px rgba(183,148,244,0.15)",
+                                    "&::before": {
+                                      opacity: 1,
+                                    },
+                                  },
+                                  ...styleAnimation(index),
+                                }}
                               >
-                                <Box
-                                  sx={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: "10px",
-                                    background: "rgba(183,148,244,0.1)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
-                                  }}
+                                <Stack
+                                  direction="row"
+                                  alignItems="center"
+                                  spacing={1.5}
                                 >
-                                  🔒
-                                </Box>
-                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                  <Typography
+                                  <Box
                                     sx={{
-                                      fontWeight: 500,
-                                      fontFamily: "'Inter', sans-serif",
-                                      fontSize: isMobile
-                                        ? "0.875rem"
-                                        : "0.95rem",
-                                      color: "#e5e7eb",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: "10px",
+                                      background: "rgba(183,148,244,0.1)",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
                                     }}
                                   >
-                                    {room.nameRoom}
-                                  </Typography>
-                                  <Typography
-                                    sx={{
-                                      fontSize: "0.75rem",
-                                      color: COLORS.textMuted,
-                                      mt: 0.25,
-                                    }}
-                                  >
-                                    {" "}
-                                    Требуется доступ
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Paper>
-                          </Box>
-                        </Grow>
-                      ))}
+                                    {icon}
+                                  </Box>
+                                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Typography
+                                      sx={{
+                                        fontWeight: 500,
+                                        fontFamily: "'Inter', sans-serif",
+                                        fontSize: isMobile
+                                          ? "0.875rem"
+                                          : "0.95rem",
+                                        color: "#e5e7eb",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {room.nameRoom}
+                                    </Typography>
+                                    <Typography
+                                      sx={{
+                                        fontSize: "0.75rem",
+                                        color: COLORS.textMuted,
+                                        mt: 0.25,
+                                      }}
+                                    >
+                                      {metaText}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                              </Paper>
+                            </Box>
+                          </Grow>
+                        );
+                      })}
                     {privateRooms.length >
                       (isMobile ? 3 : isLargeDesktop ? 5 : 4) && (
                       <Zoom in={true} timeout={500}>
@@ -1027,6 +1081,17 @@ export default function ChatRooms() {
                               }
                               if (!room.isPrivate) {
                                 navigate(`/chatcards/${room.id}`);
+                                return;
+                              }
+                              if (room.myRequestStatus === "PENDING") {
+                                showRequestError(
+                                  "Запрос уже отправлен",
+                                  "info"
+                                );
+                                return;
+                              }
+                              if (room.myRequestStatus === "REJECTED") {
+                                showRequestError("Доступ отклонён", "error");
                                 return;
                               }
                               if (room.hasAccess) {
@@ -1521,8 +1586,9 @@ export default function ChatRooms() {
           isSmall={isSmall} // при мобильном экране
           setOpenRequestModal={setOpenRequestModal} // для открытия модального окна для отправки запроса
           setRoomId={setRoomId} // id данной комнаты
-          userId={userId} // id  пользователя
           showRequestError={showRequestError}
+          handlePrivateRoomClick={handlePrivateRoomClick}
+          getPrivateState={getPrivateState}
         />
       )}
       <Snackbar
