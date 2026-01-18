@@ -14,7 +14,6 @@ import {
   Grow,
   Zoom,
   Slide,
-  Link,
   Snackbar,
   Alert,
 } from "@mui/material";
@@ -234,28 +233,34 @@ export default function ChatRooms() {
   }, [privateRooms, getPrivateState]);
 
   const handlePrivateRoomClick = (room: any) => {
+    // если пользователя нет отправляем регистрироваься 
     if (!userId) {
       navigate("/signin");
       return;
     }
 
+    // state - для приватных комнат
     const state = getPrivateState(room);
 
+    // если есть доступ
     if (state === "OWNER" || state === "ACCESS") {
       navigate(`/chatcards/${room.id}`);
       return;
     }
 
+    // если запрос был отправлен и статус запроса  ожидает ответа 
     if (state === "PENDING") {
       showRequestError("Запрос уже отправлен", "info");
       return;
     }
 
+    // если запрос быд отклонен 
     if (state === "REJECTED") {
       showRequestError("Доступ отклонён", "error");
       return;
     }
 
+    // в отсльных случаях открываем модальное окно для создания запроса
     setRoomId(room.id);
     setOpenRequestModal(true); // важно: true, а не toggle
   };
@@ -275,10 +280,12 @@ export default function ChatRooms() {
       <Grid
         container
         alignItems="stretch"
+        wrap="nowrap"
         sx={{
           minHeight: "100vh",
           height: { xs: "auto", md: "100%" },
           overflow: { xs: "visible", sm: "visible", md: "visible" },
+          flexWrap: { xs: "wrap", sm: "nowrap" },
         }}
       >
         {/* Левая колонка - Списки комнат */}
@@ -294,6 +301,9 @@ export default function ChatRooms() {
             display: "flex",
             flexDirection: "column",
             p: { xs: 2, sm: 2.5, md: 3, lg: 3.5 },
+            minWidth: 0,
+            flex: { xs: "1 1 100%", sm: "0 0 380px" }, //  всегда держит ширину
+            flexShrink: { sm: 0 }, // НЕ сжимать
           }}
         >
           <Stack
@@ -796,47 +806,6 @@ export default function ChatRooms() {
               </Collapse>
             </Paper>
           </Stack>
-
-          {/* Информационная панель для десктопа */}
-          {/* {isDesktop && (
-            <Fade in={true} timeout={1000}>
-              <Paper
-                elevation={0}
-                sx={{
-                  mt: "auto",
-                  p: 2.5,
-                  borderRadius: "16px",
-                  background: "rgba(183, 148, 244, 0.05)",
-                  border: "1px solid rgba(183, 148, 244, 0.1)",
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: "0.875rem",
-                    color: COLORS.textMuted,
-                    mb: 1,
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  Всего комнат
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "2rem",
-                    fontWeight: 700,
-                    background: "linear-gradient(45deg, #b794f4, #8b5cf6)",
-                    backgroundClip: "text",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  {allRooms.length}
-                </Typography>
-              </Paper>
-            </Fade>
-          )} */}
         </Grid>
 
         {/* Правая колонка - Поиск и результаты */}
@@ -853,6 +822,10 @@ export default function ChatRooms() {
             overflow: { xs: "visible", md: "visible" },
             display: "flex",
             flexDirection: "column",
+            maxWidth: "100%",
+            minWidth: 0,
+            width: "100%",
+            flex: { xs: "1 1 100%", sm: "1 1 auto" }, // плавно сужается вместе с экраном
           }}
         >
           <Box
