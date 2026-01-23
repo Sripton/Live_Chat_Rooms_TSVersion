@@ -13,6 +13,9 @@ import roomRequestReducer from "../reducer/RoomRequestReducer";
 // Импорт редьюсера, который обрабатывает действия, связанные с отображением  запросов
 import roomRequestStatusReducer from "../reducer/roomRequestStatusReducer";
 
+// Импорт редьюсера, который обрабатывает действия, связанные с созданием  постов пользователем
+import postReducer from "../reducer/postReducer";
+
 // Экспорт конфигурированного хранилища (store)
 export const store = configureStore({
   // Объект всех редьюсеров приложения
@@ -21,6 +24,7 @@ export const store = configureStore({
     room: roomReducer,
     roomRequest: roomRequestReducer,
     roomRequestStatus: roomRequestStatusReducer,
+    post: postReducer,
   },
 });
 

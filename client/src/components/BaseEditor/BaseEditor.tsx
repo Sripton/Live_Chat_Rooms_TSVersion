@@ -1,5 +1,7 @@
-import { Box, Button, TextField } from "@mui/material";
+import { Box, Button, TextField, Paper, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import React, { useEffect, useState } from "react";
+import { Slide } from "@mui/material";
 
 type BaseEditorProps = {
   initialValues: string;
@@ -11,86 +13,142 @@ export default function BaseEditor({
   onCancel, // закрытие формы
   onSubmit, // функция создания поста
 }: BaseEditorProps) {
+  // при изменении режима экрана
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  // состояние ввода данных в форму
   const [value, setValue] = useState(initialValues);
+
+  // синхронизация при смене initialValue (редактирование другого поста)
   useEffect(() => {
     if (initialValues) {
       setValue(initialValues || "");
     }
   }, [initialValues]);
 
-  const submit = (e) => {
+  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+    // блокируем поведение браузера
     if (e) e.preventDefault();
 
+    // проверка (внесены ли строки)
     const trimmed = (value || "").trim();
+    // если нет закрываем форму
     if (!trimmed) return onCancel?.();
+
+    // создаем пост
     onSubmit(trimmed);
   };
+  console.log("value", value);
 
   return (
-    <Box
-      component="form"
-      onSubmit={submit}
-      sx={{
-        display: "flex",
-        gap: 2,
-        mt: 1,
-        alignItems: "center",
-        position: "relative",
-      }}
-    >
-      <TextField
-        multiline
-        fullWidth
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+    <Slide in={true} direction="up" timeout={300}>
+      <Paper
+        elevation={0}
+        component="form"
+        onSubmit={submit}
         sx={{
-          width: "clamp(280px, 70vw, 720px)",
-
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 3,
-            background: "rgba(255, 240, 244, 0.6)",
-            "& fieldset": { borderColor: "rgba(194, 24, 91, 0.3)" },
-            "&:hover fieldset": { borderColor: "rgba(194, 24, 91, 0.6)" },
-            "&.Mui-focused fieldset": {
-              borderColor: "#ad1457",
-              borderWidth: 2,
-            },
-          },
-          "& .MuiInputBase-input": {
-            fontFamily: "'JetBrains Mono', monospace",
-            color: "#7a1a50",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          },
-        }}
-      />
-      <Button
-        type="submit"
-        sx={{
-          px: 2.5,
-          borderRadius: 3,
-          fontWeight: 700,
-          background:
-            "linear-gradient(180deg,rgb(165, 241, 161),rgb(143, 178, 145))",
-          boxShadow: "0 4px 12px rgba(173,20,87,0.35)",
-          textTransform: "none",
-          transition: "all .25s ease",
-          color: "#fff",
+          p: isMobile ? 2 : 2.5,
+          borderRadius: "16px",
+          background: "rgba(35, 20, 51, 0.7)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(183, 148, 244, 0.1)",
+          transition: "all 0.3s ease",
           "&:hover": {
-            background:
-              "linear-gradient(180deg,rgb(26, 84, 50),rgb(21, 109, 54))",
-            boxShadow: "0 6px 18px rgba(136,14,79,0.4)",
-            transform: "translateY(-1px)",
+            borderColor: "rgba(183, 148, 244, 0.3)",
           },
-          "&:disabled": {
-            background: "rgba(194, 24, 91, 0.2)",
-            color: "rgba(194, 24, 91, 0.5)",
+          "&:focus-within": {
+            borderColor: "rgba(183, 148, 244, 0.4)",
+            boxShadow:
+              "0 0 0 4px rgba(183, 148, 244, 0.1), 0 8px 32px rgba(0,0,0,0.3)",
+            transform: "translateY(-2px)",
           },
         }}
       >
-        Отправить
-      </Button>
-    </Box>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+            alignItems: { xs: "stretch", sm: "center" },
+            position: "relative",
+          }}
+        >
+          <TextField
+            multiline
+            fullWidth
+            value={value}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setValue(e.target.value)
+            }
+            placeholder="Напишите ваш пост..."
+            sx={{
+              flex: 1,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "12px",
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.05)",
+                transition: "all 0.3s ease",
+                "& fieldset": {
+                  borderColor: "rgba(183, 148, 244, 0.1)",
+                },
+                "&:hover": {
+                  background: "rgba(255,255,255,0.04)",
+                  "& fieldset": {
+                    borderColor: "rgba(183, 148, 244, 0.3)",
+                  },
+                },
+                "&.Mui-focused": {
+                  background: "rgba(255,255,255,0.05)",
+                  "& fieldset": {
+                    borderColor: "rgba(183, 148, 244, 0.5)",
+                    borderWidth: 2,
+                  },
+                },
+              },
+              "& .MuiInputBase-input": {
+                fontFamily: "'Inter', sans-serif",
+                color: "#e5e7eb",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                fontSize: isMobile ? "0.9rem" : "0.95rem",
+                "&::placeholder": {
+                  color: "rgba(156, 163, 175, 0.6)",
+                  opacity: 1,
+                },
+              },
+            }}
+          />
+          <Button
+            type="submit"
+            sx={{
+              px: 3,
+              py: 1.5,
+              borderRadius: "14px",
+              textTransform: "none",
+              fontWeight: 600,
+              fontFamily: "'Inter', sans-serif",
+              background: "linear-gradient(135deg, #b794f4 0%, #8b5cf6 100%)",
+              color: "#1f2933",
+              boxShadow: "0 4px 12px rgba(139, 92, 246, 0.3)",
+              transition: "all 0.3s ease",
+              minWidth: { xs: "100%", sm: "auto" },
+              "&:hover": {
+                background: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+                boxShadow: "0 8px 25px rgba(139, 92, 246, 0.4)",
+                transform: "translateY(-2px)",
+              },
+              "&:disabled": {
+                background: "rgba(183,148,244,0.3)",
+                color: "rgba(156, 163, 175, 0.5)",
+                boxShadow: "none",
+              },
+            }}
+          >
+            Отправить
+          </Button>
+        </Box>
+      </Paper>
+    </Slide>
   );
 }

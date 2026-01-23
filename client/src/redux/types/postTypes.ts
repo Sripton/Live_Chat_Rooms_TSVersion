@@ -5,12 +5,16 @@ export const SET_CREATE_POST = "SET_CREATE_POST";
 // Тип экшена для получения всех постов к одной комнате
 export const GET_ROOM_POSTS = "GET_ROOM_POSTS";
 
+// Тип экшена для очистки  постов
+export const CLEAR_ROOM_POSTS = "CLEAR_ROOM_POSTS";
+
 // Тип экшена для изменения  поста
 export const SET_EDIT_POST = "SET_EDIT_POST";
 
 // Тип экшена для удаления  поста
 export const DELETE_POST = "DELETE_POST";
 
+// пример данныз с сервера
 // {
 //   "id": "cmknny4b80000gtos8de06zst",
 //   "postTitle": "Elmar create post",
@@ -47,13 +51,19 @@ export interface CreatePostDTO {
 }
 
 // стейт. как посты лежат в Redux. форма хранилища состояния.
-//Тип состояния в Redux. Для работы со всем состоянием Redux
+// Тип состояния в Redux. Для работы со всем состоянием Redux
+// для масштабируемости в будущем
 export interface PostsState {
-  allPosts: Post[];
+  // включает в себя  и другие поля.
+  posts: Post[];
 }
 
 export type PostActions =
   | { type: typeof SET_CREATE_POST; payload: Post } // сервер вернул созданный пост
   | { type: typeof GET_ROOM_POSTS; payload: Post[] } // список постов комнаты
-  | { type: typeof SET_EDIT_POST; payload: { id: string; postTitle: string } } // что и где меняем
-  | { type: typeof DELETE_POST; payload: { id: string } }; // какой пост удалить по id
+  | { type: typeof CLEAR_ROOM_POSTS }
+  | {
+      type: typeof SET_EDIT_POST;
+      payload: { postId: string; postTitle: string };
+    } // что и где меняем
+  | { type: typeof DELETE_POST; payload: { postId: string } }; // какой пост удалить по id
