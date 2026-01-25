@@ -5,7 +5,6 @@ import {
   Typography,
   Paper,
   Divider,
-  Tooltip,
   IconButton,
   Avatar,
   Stack,
@@ -63,6 +62,9 @@ import { getRoomById } from "../../redux/actions/roomActions";
 
 // функция передачи всех постов по id комнаты
 import { fetchPosts, deletepost } from "../../redux/actions/postActions";
+
+// функция создания реакций к постам
+import { createPostReaction } from "../../redux/actions/postReactionActions";
 
 // redux types
 import { CLEAR_ROOM_POSTS } from "../../redux/types/postTypes";
@@ -127,8 +129,6 @@ export default function ChatCards() {
       },
     },
   });
-
-  console.log("postEditor", postEditor);
 
   return (
     <Box
@@ -405,6 +405,10 @@ export default function ChatCards() {
                           <Button
                             size="small"
                             startIcon={<ThumbUpIcon />}
+                            onClick={() => {
+                              createPostReaction(post.id, "LIKE");
+                              console.log("like");
+                            }}
                             sx={{
                               color: COLORS.textMuted,
                               minWidth: "auto",
@@ -428,6 +432,10 @@ export default function ChatCards() {
                           <Button
                             size="small"
                             startIcon={<ThumbDownIcon />}
+                            onClick={() => {
+                              createPostReaction(post.id, "DISLIKE");
+                              console.log("DISLIKE");
+                            }}
                             sx={{
                               color: COLORS.textMuted,
                               minWidth: "auto",

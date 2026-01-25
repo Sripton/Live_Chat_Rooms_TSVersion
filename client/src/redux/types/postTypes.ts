@@ -14,7 +14,7 @@ export const SET_EDIT_POST = "SET_EDIT_POST";
 // Тип экшена для удаления  поста
 export const DELETE_POST = "DELETE_POST";
 
-// пример данныз с сервера
+// пример данныx с сервера
 // {
 //   "id": "cmknny4b80000gtos8de06zst",
 //   "postTitle": "Elmar create post",

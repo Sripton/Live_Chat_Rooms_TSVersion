@@ -12,6 +12,7 @@ import authAPIRouter from "./API/users/authAPIRouter";
 import roomAPIRouter from "./API/rooms/roomAPIRouter";
 import roomRequestAPIRouter from "./API/roomRequest/roomRequestAPIRouter";
 import postAPIRouter from "./API/post/postAPIRouter";
+import postReactionsAPIRouter from "./API/postReaction/postAPIReaction";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -60,6 +61,7 @@ async function main() {
   app.use("/api/rooms", roomAPIRouter);
   app.use(`/api/roomRequest`, roomRequestAPIRouter);
   app.use("/api/posts", postAPIRouter);
+  app.use(`/api/post_reactions`, postReactionsAPIRouter);
   app.listen(PORT, () => console.log(`Server started on ${PORT} PORT`));
 }
 

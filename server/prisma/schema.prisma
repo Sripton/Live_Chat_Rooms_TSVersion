@@ -4,139 +4,148 @@ generator client {
 
 datasource db {
   provider = "postgresql"
- 
 }
-
 
 // Модель User 
 model User {
-  id                            String               @id @default(cuid())
-  login                         String?              @unique                           // “найти уникальную запись”
-  passwordHash                  String?
-  username                      String?              @unique                          // “найти уникальную запись” @ => для одного поля
-  avatar                        String? 
-  createdAt                     DateTime             @default(now())
-  updatedAt                     DateTime             @updatedAt
-  accounts                      Account[]                                              // “привязки к провайдерам”. виртуальное поле на уровне ORM
+  id           String    @id @default(cuid())
+  login        String?   @unique // “найти уникальную запись”
+  passwordHash String?
+  username     String?   @unique // “найти уникальную запись” @ => для одного поля
+  avatar       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  accounts     Account[] // “привязки к провайдерам”. виртуальное поле на уровне ORM
 
   //  User может быть владельцем МНОГИХ комнат
-  ownedRooms                    Room[]               @relation("RoomOwner")          
+  ownedRooms Room[] @relation("RoomOwner")
 
   // User может быть участником МНОГИХ комнат
-  roomAdmissions                RoomAdmission[]                                      // Мои членства в комнатах
+  roomAdmissions RoomAdmission[] // Мои членства в комнатах
 
   // Я запросил доступ (я requester)
-  roomRequestsMade              RoomRequest[]        @relation("RoomRequestRequester")
+  roomRequestsMade RoomRequest[] @relation("RoomRequestRequester")
 
- // Ко мне пришли запросы (я owner)
- roomRequestsReceived           RoomRequest[]        @relation("RoomRequestOwner")
+  // Ко мне пришли запросы (я owner)
+  roomRequestsReceived RoomRequest[] @relation("RoomRequestOwner")
 
- post                           Post[]
+  posts     Post[]
+  reactions PostReaction[]
 }
 
-
-
 model Account {
-  id                            String               @id @default(cuid())
-  provider                      String                                    // Кто выдал аккаунт ("google", "github", "facebook")
-  providerAccountId             String                                    // ID пользователя у провайдера
-  userId                        String                                    // внешний ключ (foreign key), ссылка на User.id
-  user                          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([provider, providerAccountId])                       // @@unique защищает от дубликатов У одного провайдера один accountId может существовать только один раз
-  @@index([userId])                                             // @@index ускоряет работу, @@ => для всей модели
+  id                String @id @default(cuid())
+  provider          String // Кто выдал аккаунт ("google", "github", "facebook")
+  providerAccountId String // ID пользователя у провайдера
+  userId            String // внешний ключ (foreign key), ссылка на User.id
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId]) // @@unique защищает от дубликатов У одного провайдера один accountId может существовать только один раз
+  @@index([userId]) // @@index ускоряет работу, @@ => для всей модели
 }
 
 // Модель Room
 model Room {
-  id                            String                @id @default(cuid())
-  nameRoom                      String
-  isPrivate                     Boolean               @default(false)
+  id        String  @id @default(cuid())
+  nameRoom  String
+  isPrivate Boolean @default(false)
 
   // Room имеет только ОДНОГО владельца
-  ownerId                       String
-  owner                         User                  @relation("RoomOwner", fields: [ownerId], references: [id])
+  ownerId String
+  owner   User   @relation("RoomOwner", fields: [ownerId], references: [id])
 
-  admissions                    RoomAdmission[]                                     // Все членства в этой комнате
+  admissions RoomAdmission[] // Все членства в этой комнате
 
   // все запросы в эту комнату
-  requests                      RoomRequest[]
-  
-  post                          Post[]
+  requests RoomRequest[]
+
+  posts Post[]
 }
 
 // Модель для связи User - Room
 model RoomAdmission {
-  id                            String                 @id @default(cuid())
-  userId                        String
-  roomId                        String
+  id     String @id @default(cuid())
+  userId String
+  roomId String
 
-  user                          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  room                          Room                   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   // чтобы один и тот же user не был дважды добавлен в одну и ту же комнату
   @@unique([userId, roomId])
-
   @@index([userId])
   @@index([roomId])
-
 }
 
-
-enum RoomRequestStatus  {
+enum RoomRequestStatus {
   PENDING
   APPROVED
   REJECTED
 }
 
 model RoomRequest {
-  id                          String                   @id @default(cuid())
+  id        String @id @default(cuid())
   // кто просит доступ
-  userId                      String 
-  requester                   User                     @relation("RoomRequestRequester", fields: [userId], references: [id], onDelete: Cascade)   
+  userId    String
+  requester User   @relation("RoomRequestRequester", fields: [userId], references: [id], onDelete: Cascade)
 
   // владелец комнаты 
-  ownerId                     String    
-  owner                       User                      @relation("RoomRequestOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-
+  ownerId String
+  owner   User   @relation("RoomRequestOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   // к какой комнате запрос
-  roomId                      String
-  room                        Room                      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
+  status RoomRequestStatus @default(PENDING)
 
-  status                      RoomRequestStatus         @default(PENDING)
-
-  createdAt                   DateTime                  @default(now())
-  updatedAt                   DateTime                  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // чтобы один и тот же пользователь не спамил запросами в одну комнату
   @@unique([userId, roomId])
-
   @@index([ownerId])
   @@index([roomId])
   @@index([userId])
 }
 
-
 model Post {
-  id                          String                   @id @default(cuid())
-  postTitle                   String 
-  userId                      String                    
-  roomId                      String
-
-  user                        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  room                        Room                     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(cuid())
+  postTitle String
+  userId    String
+  roomId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  reactions PostReaction[]
 
   @@index([userId])
   @@index([roomId])
 }
 
+enum Reaction {
+  LIKE
+  DISLIKE
+}
 
+model PostReaction {
+  id           String   @id @default(cuid())
+  userId       String
+  postId       String
+  reactionType Reaction
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
 
 
 
